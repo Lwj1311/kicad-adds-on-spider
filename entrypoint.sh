@@ -9,7 +9,8 @@ PLACEHOLDER="http://__KICAD_MIRROR_BASE__/"
 TARGET="${DOWNLOAD_BASE_URL:-http://localhost/}"
 
 # Normalize: ensure trailing slash, remove any query/fragment that a user might have pasted
-TARGET=$(echo "$TARGET" | sed 's/\?$//; s/\/\?$/\//')
+# Use awk (POSIX-compatible) instead of sed - busybox sed (Alpine) does not support \? regex
+TARGET=$(echo "$TARGET" | awk '{ sub(/\?$/,""); sub(/\/?$/,"/"); print }')
 
 HTML_DIR="/usr/share/nginx/html"
 
