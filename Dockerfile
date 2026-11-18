@@ -9,8 +9,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY kicad_adds_on_spider/ kicad_adds_on_spider/
 COPY main.py .
 
-# Use a placeholder that entrypoint.sh will later replace with the real base URL
-RUN python main.py /mirror_data --download-url "http://__KICAD_MIRROR_BASE__/"
+# ARG overridden by build-args in CI for fast smoke testing; default = 0 (full run)
+ARG LIMIT=0
+RUN python main.py /mirror_data --download-url "http://__KICAD_MIRROR_BASE__/" --limit ${LIMIT}
 
 
 # ---------- Stage 2: Nginx static server ----------
