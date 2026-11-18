@@ -49,6 +49,10 @@ jobs:
         id: meta
         run: echo "tag=$(date +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
 
+      - name: Compute lowercase repo for GHCR
+        id: repo
+        run: echo "lower=${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
       - name: Build and push mirror image
         uses: docker/build-push-action@v5
         with:
@@ -59,7 +63,7 @@ jobs:
             LIMIT=${{ inputs.limit || 0 }}
           # Push to both GHCR (fast from Actions) and Aliyun ACR (fast for China users)
           tags: |
-            ghcr.io/${{ github.repository }}:latest
-            ghcr.io/${{ github.repository }}:${{ steps.meta.outputs.tag }}
+            ghcr.io/${{ steps.repo.outputs.lower }}:latest
+            ghcr.io/${{ steps.repo.outputs.lower }}:${{ steps.meta.outputs.tag }}
             crpi-uk7yo7mxz74rkbcy.cn-shanghai.personal.cr.aliyuncs.com/lwj-kicad/kicad-addons-mirror:latest
             crpi-uk7yo7mxz74rkbcy.cn-shanghai.personal.cr.aliyuncs.com/lwj-kicad/kicad-addons-mirror:${{ steps.meta.outputs.tag }}
