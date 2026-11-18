@@ -14,7 +14,24 @@ if __name__ == '__main__':
              "(e.g. http://localhost:8080/). If empty, URLs in packages.json/repository.json "
              "will keep pointing to the official sources.",
     )
+    parser.add_argument(
+        "--limit",
+        type=int,
+        default=0,
+        help="Only process the first N package versions (0 = no limit). Useful for quick testing.",
+    )
+    parser.add_argument(
+        "--skip-existing",
+        action="store_true",
+        default=False,
+        help="Skip downloading zip files that already exist on disk.",
+    )
     args = parser.parse_args()
 
-    crawler = Worker(args.save_dir, download_base_url=args.download_url)
+    crawler = Worker(
+        args.save_dir,
+        download_base_url=args.download_url,
+        limit=args.limit,
+        skip_existing=args.skip_existing,
+    )
     crawler.run()

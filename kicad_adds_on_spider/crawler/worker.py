@@ -12,9 +12,11 @@ KICAD_OFFICIAL_REPOSITORY_URL = "https://repository.kicad.org/repository.json"
 
 
 class Worker:
-    def __init__(self, home_dir: str, download_base_url: str = ""):
+    def __init__(self, home_dir: str, download_base_url: str = "", limit: int = 0, skip_existing: bool = False):
         self._download_base_url = download_base_url
         self._home_dir = home_dir
+        self._limit = limit           # 0 = no limit, >0 = only process that many versions (for quick testing)
+        self._skip_existing = skip_existing
         self._repository = None
         self._packages = None
         os.makedirs(self._home_dir, exist_ok=True)
@@ -67,23 +69,38 @@ class Worker:
 
     def _update_libraries(self):
         total_lib_cnt = 0
+        skipped_cnt = 0
         failed_lib_cnt = 0
 
         for pkg in self._packages.packages:
             for version in pkg.versions:
+                # --limit: stop early once we've processed enough versions
+                if self._limit > 0 and total_lib_cnt >= self._limit:
+                    break
+
                 total_lib_cnt += 1
+                save_path = self.get_library_save_path(pkg, version)
+
+                # --skip-existing: don't re-download files that are already on disk
+                if self._skip_existing and os.path.isfile(save_path) and os.path.getsize(save_path) > 0:
+                    skipped_cnt += 1
+                    version.download_url = self.get_library_download_url(pkg, version)
+                    continue
+
                 try:
-                    CrawlerUtils.download_content_and_save(
-                        version.download_url,
-                        self.get_library_save_path(pkg, version),
-                    )
+                    CrawlerUtils.download_content_and_save(version.download_url, save_path)
                     version.download_url = self.get_library_download_url(pkg, version)
                 except Exception as e:
                     print(f"[WARN] Download failed: {pkg.name} v{version.version}: {e}", file=sys.stderr)
                     failed_lib_cnt += 1
 
+            if self._limit > 0 and total_lib_cnt >= self._limit:
+                break
+
+        success_cnt = total_lib_cnt - failed_lib_cnt
         print(
-            f"Total: {total_lib_cnt}, Success: {total_lib_cnt - failed_lib_cnt}, Failed: {failed_lib_cnt}",
+            f"Total: {total_lib_cnt}, Success: {success_cnt}, "
+            f"Skipped(already exist): {skipped_cnt}, Failed: {failed_lib_cnt}",
             flush=True,
         )
 
