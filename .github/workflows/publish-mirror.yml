@@ -1,0 +1,46 @@
+name: Build and Publish KiCad Add-ons Mirror
+
+# Run daily at UTC 08:00 (= Beijing 16:00), plus manual trigger
+on:
+  schedule:
+    - cron: '0 8 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  publish-mirror:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Aliyun Container Registry
+        env:
+          ACR_HOST: crpi-uk7yo7mxz74rkbcy.cn-shanghai.personal.cr.aliyuncs.com
+          ACR_USER: liuweijian@1613452717930870
+          ACR_PASS: ${{ secrets.ALIYUNCS_DOCKER_PASSWORD_LWJ }}
+        run: |
+          mkdir -p ~/.docker
+          [ -f ~/.docker/config.json ] || echo '{"auths":{}}' > ~/.docker/config.json
+          auth=$(printf '%s:%s' "$ACR_USER" "$ACR_PASS" | base64 -w0)
+          jq --arg h "$ACR_HOST" --arg a "$auth" '.auths[$h] = {"auth": $a}' ~/.docker/config.json > /tmp/config.json
+          mv /tmp/config.json ~/.docker/config.json
+
+      - name: Compute build date tag
+        id: meta
+        run: echo "tag=$(date +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push mirror image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            crpi-uk7yo7mxz74rkbcy.cn-shanghai.personal.cr.aliyuncs.com/lwj-kicad/kicad-addons-mirror:latest
+            crpi-uk7yo7mxz74rkbcy.cn-shanghai.personal.cr.aliyuncs.com/lwj-kicad/kicad-addons-mirror:${{ steps.meta.outputs.tag }}

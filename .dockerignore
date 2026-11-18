@@ -1,0 +1,14 @@
+.git/
+.gitignore
+__pycache__/
+*.pyc
+*.pyo
+*.log
+*.log.*
+start.sh
+template/
+.github/
+.dockerignore
+Dockerfile
+entrypoint.sh
+nginx.conf
