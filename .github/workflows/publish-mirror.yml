@@ -34,16 +34,11 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Login to Aliyun Container Registry
-        env:
-          ACR_HOST: crpi-uk7yo7mxz74rkbcy.cn-shanghai.personal.cr.aliyuncs.com
-          ACR_USER: liuweijian@1613452717930870
-          ACR_PASS: ${{ secrets.ALIYUNCS_DOCKER_PASSWORD_LWJ }}
-        run: |
-          mkdir -p ~/.docker
-          [ -f ~/.docker/config.json ] || echo '{"auths":{}}' > ~/.docker/config.json
-          auth=$(printf '%s:%s' "$ACR_USER" "$ACR_PASS" | base64 -w0)
-          jq --arg h "$ACR_HOST" --arg a "$auth" '.auths[$h] = {"auth": $a}' ~/.docker/config.json > /tmp/config.json
-          mv /tmp/config.json ~/.docker/config.json
+        uses: docker/login-action@v3
+        with:
+          registry: crpi-uk7yo7mxz74rkbcy.cn-shanghai.personal.cr.aliyuncs.com
+          username: liuweijian@1613452717930870
+          password: ${{ secrets.ALIYUNCS_DOCKER_PASSWORD_LWJ }}
 
       - name: Compute build date tag
         id: meta
